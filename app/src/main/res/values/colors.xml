@@ -4,6 +4,7 @@
     <color name="surface">#FFFFFF</color>
     <color name="background">#F2F5F8</color>
     <color name="accent">#1769AA</color>
+    <color name="icon_background">#E8F2F9</color>
     <color name="accent_soft">#E8F2F9</color>
     <color name="accent_border">#C9DFEE</color>
     <color name="accent_ripple">#331769AA</color>
