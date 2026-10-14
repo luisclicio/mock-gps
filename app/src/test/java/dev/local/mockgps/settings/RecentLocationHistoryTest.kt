@@ -57,6 +57,18 @@ class RecentLocationHistoryTest {
     }
 
     @Test
+    fun removesOnlyTheSelectedLocation() {
+        val home = RecentLocation(Coordinates(-3.73, -38.52), "Casa")
+        val office = RecentLocation(Coordinates(-3.74, -38.50), "Trabalho")
+        val park = RecentLocation(Coordinates(-3.75, -38.49), "Parque")
+
+        assertEquals(
+            listOf(office, park),
+            RecentLocationHistory.remove(listOf(home, office, park), home.coordinates),
+        )
+    }
+
+    @Test
     fun encodedHistoryRoundTripsLabelsWithUnicodeAndSeparators() {
         val location = RecentLocation(
             Coordinates(-3.73, -38.52),

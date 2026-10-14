@@ -69,6 +69,9 @@ class SettingsRepository(context: Context) {
             RecentLocationHistory.updateLabel(locations, coordinates, label)
         }
 
+    fun removeRecentLocation(coordinates: Coordinates): List<RecentLocation> =
+        updateRecentLocations { locations -> RecentLocationHistory.remove(locations, coordinates) }
+
     private fun updateRecentLocations(
         update: (List<RecentLocation>) -> List<RecentLocation>,
     ): List<RecentLocation> {

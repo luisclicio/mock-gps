@@ -37,6 +37,9 @@ object RecentLocationHistory {
         },
     )
 
+    fun remove(locations: List<RecentLocation>, coordinates: Coordinates): List<RecentLocation> =
+        normalize(locations.filterNot { it.coordinates == coordinates })
+
     fun encode(locations: List<RecentLocation>): String = normalize(locations).joinToString("\n") { location ->
         val label = URLEncoder.encode(location.label, Charsets.UTF_8.name())
         "${location.coordinates.latitude}\t${location.coordinates.longitude}\t$label"

@@ -1,0 +1,19 @@
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/accent_ripple">
+    <item>
+        <selector>
+            <item android:state_enabled="false">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/disabled_action" />
+                    <corners android:radius="14dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/accent" />
+                    <corners android:radius="14dp" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

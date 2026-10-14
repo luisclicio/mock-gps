@@ -142,25 +142,48 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal">
+        android:layout_height="56dp"
+        android:background="@drawable/card_background"
+        android:orientation="horizontal"
+        android:padding="4dp">
 
         <Spinner
             android:id="@+id/recentLocationSpinner"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginStart="4dp"
             android:layout_weight="1"
             android:contentDescription="@string/recent_locations_title"
             android:spinnerMode="dropdown" />
 
-        <Button
+        <ImageButton
             android:id="@+id/recentLocationLabelButton"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/recent_location_label_background"
+            android:contentDescription="@string/recent_location_name_accessibility"
             android:enabled="false"
-            android:minWidth="0dp"
-            android:text="@string/recent_location_name"
-            android:textSize="12sp" />
+            android:padding="12dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_history_edit"
+            android:tint="@color/accent"
+            android:tooltipText="@string/recent_location_name_accessibility" />
+
+        <ImageButton
+            android:id="@+id/recentLocationRemoveButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/recent_location_remove_background"
+            android:contentDescription="@string/recent_location_remove_unavailable"
+            android:enabled="false"
+            android:padding="12dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_history_delete"
+            android:tint="@color/danger"
+            android:tooltipText="@string/recent_location_remove_unavailable" />
     </LinearLayout>
 
     <LinearLayout
@@ -218,10 +241,11 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/accent"
+            android:background="@drawable/action_apply_background"
             android:text="@string/action_apply"
-            android:textColor="@color/surface"
-            android:textSize="15sp"
+            android:textColor="@color/action_button_text"
+            android:textAllCaps="false"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <Button
@@ -230,11 +254,12 @@
             android:layout_height="match_parent"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/danger"
+            android:background="@drawable/action_stop_background"
             android:enabled="false"
             android:text="@string/action_stop"
-            android:textColor="@color/surface"
-            android:textSize="15sp"
+            android:textColor="@color/action_button_text"
+            android:textAllCaps="false"
+            android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>
 

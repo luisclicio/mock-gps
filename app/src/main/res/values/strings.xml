@@ -3,10 +3,13 @@
     <string name="app_subtitle">Simule uma localização para testes</string>
     <string name="section_coordinates">Coordenadas</string>
     <string name="recent_locations_title">Últimas localizações</string>
-    <string name="recent_locations_prompt">Escolha uma localização recente…</string>
-    <string name="recent_locations_empty">Nenhuma localização aplicada ainda</string>
-    <string name="recent_location_name">Nomear</string>
-    <string name="recent_location_edit_name">Editar nome</string>
+    <string name="recent_locations_prompt">Escolha um local recente</string>
+    <string name="recent_locations_empty">Nenhum local recente</string>
+    <string name="recent_location_edit_accessibility">Editar rótulo da localização selecionada</string>
+    <string name="recent_location_name_accessibility">Adicionar rótulo à localização selecionada</string>
+    <string name="recent_location_remove_accessibility">Remover %1$s do histórico</string>
+    <string name="recent_location_remove_unavailable">Selecione uma localização para removê-la do histórico</string>
+    <string name="recent_location_removed">Localização removida do histórico.</string>
     <string name="recent_location_unnamed">Sem rótulo</string>
     <string name="recent_location_option">%1$s\n%2$s, %3$s</string>
     <string name="recent_location_dialog_add">Adicionar rótulo</string>

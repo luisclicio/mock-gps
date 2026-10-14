@@ -24,6 +24,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
@@ -54,7 +55,8 @@ class MainActivity : Activity() {
     private lateinit var applyButton: Button
     private lateinit var stopButton: Button
     private lateinit var recentLocationSpinner: Spinner
-    private lateinit var recentLocationLabelButton: Button
+    private lateinit var recentLocationLabelButton: ImageButton
+    private lateinit var recentLocationRemoveButton: ImageButton
     private lateinit var statusText: TextView
     private lateinit var mapView: MapView
     private lateinit var mapMessage: TextView
@@ -108,6 +110,7 @@ class MainActivity : Activity() {
         stopButton = findViewById(R.id.stopButton)
         recentLocationSpinner = findViewById(R.id.recentLocationSpinner)
         recentLocationLabelButton = findViewById(R.id.recentLocationLabelButton)
+        recentLocationRemoveButton = findViewById(R.id.recentLocationRemoveButton)
         statusText = findViewById(R.id.statusText)
         mapView = findViewById(R.id.mapView)
         mapMessage = findViewById(R.id.mapMessage)
@@ -226,7 +229,7 @@ class MainActivity : Activity() {
             ) {
                 val location = recentLocations.getOrNull(position - 1)
                 selectedRecentLocation = location
-                renderRecentLocationLabelButton()
+                renderRecentLocationActions()
                 if (location != null) {
                     setInputCoordinates(location.coordinates)
                     clearValidationErrors()
@@ -237,10 +240,11 @@ class MainActivity : Activity() {
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 selectedRecentLocation = null
-                renderRecentLocationLabelButton()
+                renderRecentLocationActions()
             }
         }
         recentLocationLabelButton.setOnClickListener { showRecentLocationLabelDialog() }
+        recentLocationRemoveButton.setOnClickListener { removeSelectedRecentLocation() }
         renderRecentLocations()
     }
 
@@ -278,19 +282,34 @@ class MainActivity : Activity() {
         val selectedIndex = recentLocations.indexOfFirst { it.coordinates == selectedCoordinates }
         recentLocationSpinner.setSelection(if (selectedIndex >= 0) selectedIndex + 1 else 0)
         selectedRecentLocation = recentLocations.getOrNull(selectedIndex)
-        renderRecentLocationLabelButton()
+        renderRecentLocationActions()
     }
 
-    private fun renderRecentLocationLabelButton() {
+    private fun renderRecentLocationActions() {
         val location = selectedRecentLocation
-        recentLocationLabelButton.isEnabled = location != null
-        recentLocationLabelButton.setText(
+        val isSelected = location != null
+        recentLocationLabelButton.isEnabled = isSelected
+        val labelActionDescription = getString(
             if (location?.label.isNullOrBlank()) {
-                R.string.recent_location_name
+                R.string.recent_location_name_accessibility
             } else {
-                R.string.recent_location_edit_name
+                R.string.recent_location_edit_accessibility
             },
         )
+        recentLocationLabelButton.contentDescription = labelActionDescription
+        recentLocationLabelButton.tooltipText = labelActionDescription
+        recentLocationLabelButton.alpha = if (isSelected) 1f else 0.45f
+
+        recentLocationRemoveButton.isEnabled = isSelected
+        recentLocationRemoveButton.alpha = if (isSelected) 1f else 0.45f
+        recentLocationRemoveButton.contentDescription = location?.let { selected ->
+            val name = selected.label.ifBlank {
+                "${formatCoordinate(selected.coordinates.latitude)}, " +
+                    formatCoordinate(selected.coordinates.longitude)
+            }
+            getString(R.string.recent_location_remove_accessibility, name)
+        } ?: getString(R.string.recent_location_remove_unavailable)
+        recentLocationRemoveButton.tooltipText = recentLocationRemoveButton.contentDescription
     }
 
     private fun showRecentLocationLabelDialog() {
@@ -322,6 +341,13 @@ class MainActivity : Activity() {
                 Toast.makeText(this, R.string.recent_location_label_saved, Toast.LENGTH_SHORT).show()
             }
             .show()
+    }
+
+    private fun removeSelectedRecentLocation() {
+        val location = selectedRecentLocation ?: return
+        settings.removeRecentLocation(location.coordinates)
+        renderRecentLocations()
+        Toast.makeText(this, R.string.recent_location_removed, Toast.LENGTH_SHORT).show()
     }
 
     private fun setupCoordinateInputs() {

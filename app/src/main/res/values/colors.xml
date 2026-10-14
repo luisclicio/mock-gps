@@ -4,8 +4,14 @@
     <color name="surface">#FFFFFF</color>
     <color name="background">#F2F5F8</color>
     <color name="accent">#1769AA</color>
-    <color name="accent_dark">#0D426E</color>
+    <color name="accent_soft">#E8F2F9</color>
+    <color name="accent_border">#C9DFEE</color>
+    <color name="accent_ripple">#331769AA</color>
     <color name="danger">#B42318</color>
+    <color name="danger_soft">#FDECEB</color>
+    <color name="danger_border">#F2CBC7</color>
+    <color name="danger_ripple">#33B42318</color>
+    <color name="disabled_action">#D8E0E7</color>
     <color name="success">#18794E</color>
     <color name="warning">#9A6700</color>
     <color name="border">#D8E0E7</color>
