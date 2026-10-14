@@ -1,0 +1,19 @@
+services:
+  android:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fake-gps-android:1.0
+    working_dir: /workspace
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      ANDROID_HOME: /opt/android-sdk
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      GRADLE_USER_HOME: /gradle-cache
+      JAVA_TOOL_OPTIONS: -Duser.home=/gradle-cache
+    volumes:
+      - .:/workspace
+      - gradle-cache:/gradle-cache
+
+volumes:
+  gradle-cache:

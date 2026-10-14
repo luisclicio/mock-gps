@@ -1,0 +1,74 @@
+# Mock GPS
+
+Aplicativo Android nativo para testes locais de localização simulada. Permite informar latitude/longitude, escolher um ponto no mapa, ativar variações suaves de até 5 metros e manter atualizações por um serviço em primeiro plano.
+
+O projeto usa Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36 e MapLibre Native Android 11.8.0. O Docker fornece JDK e Android SDK; no computador host são necessários Docker Compose e, somente para instalar no aparelho, Android Platform Tools (`adb`).
+
+## Construir e testar
+
+Na raiz do repositório, construa a imagem uma vez:
+
+```sh
+docker compose build
+```
+
+Depois, construa o APK e execute os testes unitários e o lint:
+
+```sh
+./scripts/build.sh
+./scripts/test.sh
+```
+
+Os comandos equivalentes são:
+
+```sh
+docker compose run --rm android ./gradlew assembleDebug
+docker compose run --rm android ./gradlew testDebugUnitTest
+docker compose run --rm android ./gradlew lintDebug
+```
+
+O APK de depuração fica em `app/build/outputs/apk/debug/app-debug.apk`. O volume Docker `gradle-cache` mantém o cache de dependências e a chave de assinatura de debug entre execuções. Preserve esse volume para que novas versões do APK possam atualizar a instalação existente. Se ele for removido, o Gradle cria outra chave e o Android exige desinstalar a versão anterior antes de instalar a nova. O código-fonte é montado no container, então as mudanças feitas no VS Code ficam disponíveis imediatamente. Na primeira execução, o script baixa o Gradle Wrapper do repositório oficial do projeto e verifica o SHA-256 fixado no repositório; o Gradle também verifica o checksum da distribuição. O build da imagem baixa as ferramentas Android fixadas no `Dockerfile`.
+
+Para trocar o estilo do mapa, defina `mapStyleUrl` na linha de comando do Gradle, por exemplo:
+
+```sh
+docker compose run --rm android ./gradlew assembleDebug -PmapStyleUrl=https://tiles.openfreemap.org/styles/liberty
+```
+
+## Instalar no Samsung Galaxy A34
+
+Se `adb install -r` retornar `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, o APK já instalado foi assinado com outra chave. Anote as coordenadas selecionadas e as preferências do app, remova a instalação antiga uma vez com `adb uninstall dev.local.mockgps` e instale o APK novamente. Essa remoção apaga os dados locais do app. Builds posteriores reutilizam a chave no volume `gradle-cache` e podem atualizar a instalação normalmente.
+
+1. Ative as Opções do desenvolvedor em **Configurações → Sobre o telefone → Informações do software** e toque sete vezes em **Número da versão**. Confirme o bloqueio do aparelho quando solicitado.
+2. Em **Opções do desenvolvedor**, ative **Depuração USB** e conecte o telefone ao computador. Autorize a chave RSA na tela do aparelho.
+3. Construa o APK e instale usando o `adb` do host:
+
+   ```sh
+   ./scripts/build.sh
+   ./scripts/install.sh
+   ```
+
+   Ou use diretamente `adb install -r app/build/outputs/apk/debug/app-debug.apk`. O ADB permanece no host; não é necessário encaminhar USB ao Docker.
+4. Abra **Mock GPS**, conceda a permissão de localização e notificações quando solicitadas e habilite a localização do aparelho.
+5. Em **Opções do desenvolvedor → Selecionar app de local fictício**, escolha **Mock GPS**. Os nomes dos menus podem variar um pouco conforme a versão do One UI.
+6. Informe coordenadas ou toque no mapa e pressione **Aplicar**. Para encerrar, pressione **Parar** no app ou na notificação persistente.
+
+O aplicativo não precisa de root. O Android mantém a simulação marcada como localização fictícia; o app não tenta esconder nem alterar esse sinal.
+
+## Privacidade e limitações
+
+- As coordenadas selecionadas e preferências ficam em `SharedPreferences` local. O app não tem conta, analytics, anúncios, backend ou banco remoto e não lê a localização real do aparelho.
+- A permissão de localização é solicitada porque o Android a exige para este serviço em primeiro plano. Em Android 8–11 também é necessária a permissão precisa para registrar o provedor de teste; o manifesto limita essa permissão a essas versões. Ela não é usada para obter a localização do usuário.
+- A permissão de internet serve para carregar estilo, fontes e tiles do mapa. O provedor padrão é o [OpenFreeMap](https://openfreemap.org/quick_start/), que não exige chave. Ao mostrar uma região, as requisições de tiles revelam ao provedor a área do mapa consultada; por isso, não use o mapa se não quiser fazer essas requisições. A entrada manual continua disponível offline.
+- O provedor público de mapa é oferecido “como está”; [termos do OpenFreeMap](https://openfreemap.org/tos/) e disponibilidade podem mudar. Atribuição do mapa permanece visível. Para produção ou tráfego elevado, configure um provedor apropriado respeitando seus termos e limites.
+- A API oficial de provedores de teste é usada. Apps podem detectar a simulação por `Location.isMock()`, e alguns apps usam provedores de localização fundida ou políticas próprias, portanto o resultado pode variar por aparelho e aplicativo.
+- As variações são um passeio aleatório suave limitado a 5 m, atualizado a cada segundo. Para cumprir esse intervalo com a tela bloqueada, o serviço mantém um bloqueio parcial de CPU enquanto estiver ativo, o que consome bateria. Ele libera o bloqueio ao parar e não reinicia a simulação após reinicialização do aparelho.
+- A seleção inicial do mock provider, o serviço em primeiro plano, a notificação e a integração com provedores de cada fabricante precisam ser conferidos no aparelho. Não há resultado de teste físico documentado como aprovado neste repositório.
+
+## Desenvolvimento
+
+O app usa Views XML e separa a tela (`MainActivity`), integração com `LocationManager` (`MockLocationController`), execução em segundo plano (`MockLocationService`), validação e variação de coordenadas e interação do mapa. O mapa é implementado com MapLibre Native Android e estilo OpenFreeMap Liberty. Os valores de latitude/longitude aceitam ponto ou vírgula decimal.
+
+Testes unitários cobrem os limites de entrada, NaN/infinito, variação desativada, limites de distância, movimento determinístico, polos e a troca da linha internacional de data. Os fluxos de permissão, serviço, notificação e provedor de teste ainda exigem validação manual em um Android físico.
+
+Siga o [roteiro de testes no aparelho](docs/device-test-checklist.md) para verificar esses fluxos no Galaxy A34 e registrar resultados sem confundir instruções com testes já executados.
