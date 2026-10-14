@@ -15,11 +15,16 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
+import android.text.InputFilter
+import android.text.InputType
 import android.text.TextWatcher
 import android.view.View
 import android.view.WindowInsets
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -34,6 +39,8 @@ import dev.local.mockgps.geo.CoordinateValidator
 import dev.local.mockgps.location.MockLocationController
 import dev.local.mockgps.location.MockLocationService
 import dev.local.mockgps.map.MapController
+import dev.local.mockgps.settings.RecentLocation
+import dev.local.mockgps.settings.RecentLocationHistory
 import dev.local.mockgps.settings.SettingsRepository
 import java.util.Locale
 
@@ -46,6 +53,8 @@ class MainActivity : Activity() {
     private lateinit var jitterSwitch: Switch
     private lateinit var applyButton: Button
     private lateinit var stopButton: Button
+    private lateinit var recentLocationSpinner: Spinner
+    private lateinit var recentLocationLabelButton: Button
     private lateinit var statusText: TextView
     private lateinit var mapView: MapView
     private lateinit var mapMessage: TextView
@@ -59,6 +68,8 @@ class MainActivity : Activity() {
     private var statusMessage: String? = null
     private var activeCoordinates: Coordinates? = null
     private var activeJitter = false
+    private var recentLocations: List<RecentLocation> = emptyList()
+    private var selectedRecentLocation: RecentLocation? = null
 
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -71,6 +82,12 @@ class MainActivity : Activity() {
             val longitude = intent.getDoubleExtra(MockLocationService.EXTRA_LONGITUDE, Double.NaN)
             activeCoordinates = Coordinates(latitude, longitude).takeIf(CoordinateValidator::isValid)
             activeJitter = intent.getBooleanExtra(MockLocationService.EXTRA_JITTER_ENABLED, false)
+            if (currentStatus == MockLocationService.STATUS_ACTIVE) {
+                activeCoordinates?.let { coordinates ->
+                    settings.recordRecentLocation(coordinates)
+                    renderRecentLocations(selectedCoordinates = coordinates)
+                }
+            }
             renderStatus()
         }
     }
@@ -89,6 +106,8 @@ class MainActivity : Activity() {
         jitterSwitch = findViewById(R.id.jitterSwitch)
         applyButton = findViewById(R.id.applyButton)
         stopButton = findViewById(R.id.stopButton)
+        recentLocationSpinner = findViewById(R.id.recentLocationSpinner)
+        recentLocationLabelButton = findViewById(R.id.recentLocationLabelButton)
         statusText = findViewById(R.id.statusText)
         mapView = findViewById(R.id.mapView)
         mapMessage = findViewById(R.id.mapMessage)
@@ -186,6 +205,7 @@ class MainActivity : Activity() {
     private fun setupActions() {
         applyButton.setOnClickListener { applySelectedCoordinates() }
         stopButton.setOnClickListener { stopSimulation() }
+        setupRecentLocations()
         jitterSwitch.setOnCheckedChangeListener { _, enabled ->
             settings.saveJitterEnabled(enabled)
             if (currentStatus == MockLocationService.STATUS_ACTIVE) {
@@ -194,6 +214,114 @@ class MainActivity : Activity() {
             }
         }
         renderButtons()
+    }
+
+    private fun setupRecentLocations() {
+        recentLocationSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                val location = recentLocations.getOrNull(position - 1)
+                selectedRecentLocation = location
+                renderRecentLocationLabelButton()
+                if (location != null) {
+                    setInputCoordinates(location.coordinates)
+                    clearValidationErrors()
+                    settings.saveCoordinates(location.coordinates)
+                    mapController?.setSelectedCoordinates(location.coordinates)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                selectedRecentLocation = null
+                renderRecentLocationLabelButton()
+            }
+        }
+        recentLocationLabelButton.setOnClickListener { showRecentLocationLabelDialog() }
+        renderRecentLocations()
+    }
+
+    private fun renderRecentLocations(selectedCoordinates: Coordinates? = null) {
+        recentLocations = settings.loadRecentLocations()
+        val prompt = getString(
+            if (recentLocations.isEmpty()) {
+                R.string.recent_locations_empty
+            } else {
+                R.string.recent_locations_prompt
+            },
+        )
+        val options = buildList {
+            add(prompt)
+            recentLocations.forEach { location ->
+                val label = location.label.ifBlank { getString(R.string.recent_location_unnamed) }
+                add(
+                    getString(
+                        R.string.recent_location_option,
+                        label,
+                        formatCoordinate(location.coordinates.latitude),
+                        formatCoordinate(location.coordinates.longitude),
+                    ),
+                )
+            }
+        }
+        recentLocationSpinner.adapter = ArrayAdapter(
+            this,
+            R.layout.recent_location_spinner_item,
+            options,
+        ).apply {
+            setDropDownViewResource(R.layout.recent_location_spinner_item)
+        }
+
+        val selectedIndex = recentLocations.indexOfFirst { it.coordinates == selectedCoordinates }
+        recentLocationSpinner.setSelection(if (selectedIndex >= 0) selectedIndex + 1 else 0)
+        selectedRecentLocation = recentLocations.getOrNull(selectedIndex)
+        renderRecentLocationLabelButton()
+    }
+
+    private fun renderRecentLocationLabelButton() {
+        val location = selectedRecentLocation
+        recentLocationLabelButton.isEnabled = location != null
+        recentLocationLabelButton.setText(
+            if (location?.label.isNullOrBlank()) {
+                R.string.recent_location_name
+            } else {
+                R.string.recent_location_edit_name
+            },
+        )
+    }
+
+    private fun showRecentLocationLabelDialog() {
+        val location = selectedRecentLocation ?: return
+        val input = EditText(this).apply {
+            hint = getString(R.string.recent_location_label_hint)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            filters = arrayOf(InputFilter.LengthFilter(RecentLocationHistory.MAX_LABEL_LENGTH))
+            setSingleLine(true)
+            setText(location.label)
+            setSelection(text.length)
+            val horizontalPadding = (12 * resources.displayMetrics.density).toInt()
+            val verticalPadding = (8 * resources.displayMetrics.density).toInt()
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(
+                if (location.label.isBlank()) {
+                    R.string.recent_location_dialog_add
+                } else {
+                    R.string.recent_location_dialog_edit
+                },
+            )
+            .setView(input)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.save) { _, _ ->
+                settings.saveRecentLocationLabel(location.coordinates, input.text.toString())
+                renderRecentLocations(selectedCoordinates = location.coordinates)
+                Toast.makeText(this, R.string.recent_location_label_saved, Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun setupCoordinateInputs() {

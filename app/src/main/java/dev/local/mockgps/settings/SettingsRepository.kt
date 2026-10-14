@@ -58,6 +58,27 @@ class SettingsRepository(context: Context) {
 
     fun loadError(): String? = preferences.getString(KEY_LAST_ERROR, null)
 
+    fun loadRecentLocations(): List<RecentLocation> =
+        RecentLocationHistory.decode(preferences.getString(KEY_RECENT_LOCATIONS, "").orEmpty())
+
+    fun recordRecentLocation(coordinates: Coordinates): List<RecentLocation> =
+        updateRecentLocations { locations -> RecentLocationHistory.record(locations, coordinates) }
+
+    fun saveRecentLocationLabel(coordinates: Coordinates, label: String): List<RecentLocation> =
+        updateRecentLocations { locations ->
+            RecentLocationHistory.updateLabel(locations, coordinates, label)
+        }
+
+    private fun updateRecentLocations(
+        update: (List<RecentLocation>) -> List<RecentLocation>,
+    ): List<RecentLocation> {
+        val locations = update(loadRecentLocations())
+        preferences.edit()
+            .putString(KEY_RECENT_LOCATIONS, RecentLocationHistory.encode(locations))
+            .apply()
+        return locations
+    }
+
     private companion object {
         const val PREFERENCES_NAME = "mock_gps_settings"
         const val KEY_LATITUDE = "latitude"
@@ -68,5 +89,6 @@ class SettingsRepository(context: Context) {
         const val KEY_ACTIVE_LONGITUDE = "active_longitude"
         const val KEY_ACTIVE_JITTER = "active_jitter"
         const val KEY_LAST_ERROR = "last_error"
+        const val KEY_RECENT_LOCATIONS = "recent_locations"
     }
 }
