@@ -12,16 +12,16 @@ The application must support:
 - Optional small coordinate variations (GPS jitter).
 - Continuous location updates while simulation is active.
 - Completely Dockerized development and build environment.
-- Installation on a physical Samsung Galaxy A34.
+- Installation on a compatible physical Android device.
 
-The project is intended for local development, testing, and personal use.
+The project is intended for local development and location-related app testing.
 
 **Project name:** Mock GPS  
 **Application ID:** `dev.local.mockgps`  
 **Language:** Kotlin  
 **Platform:** Android  
 **Minimum Android version:** Android 8.0 (API 26)  
-**Primary test device:** Samsung Galaxy A34
+**Test device:** A physical Android device compatible with the app's supported Android versions.
 
 ## 2. Core Principles
 
@@ -30,7 +30,7 @@ The project is intended for local development, testing, and personal use.
 3. Never require Android Studio.
 4. Never require Java, Gradle, Kotlin, or Android SDK installed on the host.
 5. Use Docker for all build and development tooling.
-6. Use VS Code as the primary editor.
+6. Do not require a specific code editor.
 7. Do not implement root-dependent functionality.
 8. Do not collect analytics or transmit user coordinates to a backend.
 9. Keep the application usable without an account.
@@ -59,7 +59,6 @@ Use native Android Views with XML layouts. Avoid Jetpack Compose for the initial
 - Eclipse Temurin JDK
 - Android SDK Command-Line Tools
 - Gradle Wrapper
-- VS Code
 - ADB on the host, only for USB installation and debugging
 
 The host must not need Android Studio, Java, Gradle, or the Android SDK.
@@ -84,7 +83,7 @@ The Docker image must include everything necessary to compile and test the Andro
 
 Use Docker volumes to persist Gradle caches.
 
-The source code must be mounted into the container so changes made in VS Code are immediately available.
+The source code must be mounted into the container so changes made on the host are immediately available.
 
 ### Required commands
 
@@ -488,9 +487,9 @@ The agent must provide:
 3. Gradle Wrapper.
 4. Working debug APK build command.
 5. Unit tests.
-6. README with Linux setup instructions.
-7. ADB installation instructions.
-8. Samsung Galaxy A34 configuration instructions.
+6. README with host setup instructions.
+7. ADB installation instructions for a compatible Android device.
+8. Generic Android device configuration instructions.
 9. Known limitations.
 
 Expected APK output:
@@ -558,9 +557,9 @@ The project is complete when:
 
 - The entire Android build runs inside Docker.
 - No host Android SDK, Gradle, Kotlin, or JDK installation is required.
-- The project opens normally in VS Code.
+- The project source can be edited with a standard code editor.
 - The APK builds using a documented Docker Compose command.
-- The APK installs on the Samsung Galaxy A34.
+- The APK installs on a compatible physical Android device.
 - The user can enter coordinates manually.
 - The user can select coordinates on a map.
 - The selected coordinates remain synchronized between map and inputs.

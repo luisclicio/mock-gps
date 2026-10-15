@@ -27,7 +27,7 @@ docker compose run --rm android ./gradlew testDebugUnitTest
 docker compose run --rm android ./gradlew lintDebug
 ```
 
-O APK de depuração fica em `app/build/outputs/apk/debug/app-debug.apk`. O volume Docker `gradle-cache` mantém o cache de dependências e a chave de assinatura de debug entre execuções. Preserve esse volume para que novas versões do APK possam atualizar a instalação existente. Se ele for removido, o Gradle cria outra chave e o Android exige desinstalar a versão anterior antes de instalar a nova. O código-fonte é montado no container, então as mudanças feitas no VS Code ficam disponíveis imediatamente. Na primeira execução, o script baixa o Gradle Wrapper do repositório oficial do projeto e verifica o SHA-256 fixado no repositório; o Gradle também verifica o checksum da distribuição. O build da imagem baixa as ferramentas Android fixadas no `Dockerfile`.
+O APK de depuração fica em `app/build/outputs/apk/debug/app-debug.apk`. O volume Docker `gradle-cache` mantém o cache de dependências e a chave de assinatura de debug entre execuções. Preserve esse volume para que novas versões do APK possam atualizar a instalação existente. Se ele for removido, o Gradle cria outra chave e o Android exige desinstalar a versão anterior antes de instalar a nova. O código-fonte é montado no container a partir da raiz do repositório e fica disponível durante o build. Na primeira execução, o script baixa o Gradle Wrapper do repositório oficial do projeto e verifica o SHA-256 fixado no repositório; o Gradle também verifica o checksum da distribuição. O build da imagem baixa as ferramentas Android fixadas no `Dockerfile`.
 
 Para trocar o estilo do mapa, defina `mapStyleUrl` na linha de comando do Gradle, por exemplo:
 
@@ -53,19 +53,19 @@ docker compose run --rm --user "$(id -u):$(id -g)" \
 
 No repositório GitHub, abra **Settings → Secrets and variables → Actions** e cadastre estes repository secrets:
 
-- `ANDROID_SIGNING_KEYSTORE_BASE64`: conteúdo de `.secrets/mock-gps-release.jks` codificado em uma linha com `base64 -w 0 .secrets/mock-gps-release.jks`.
+- `ANDROID_SIGNING_KEYSTORE_BASE64`: conteúdo de `.secrets/mock-gps-release.jks` codificado em uma linha com `base64 .secrets/mock-gps-release.jks | tr -d '\n'`.
 - `ANDROID_SIGNING_STORE_PASSWORD`: senha do keystore.
 - `ANDROID_SIGNING_KEY_ALIAS`: `mockgps`.
 - `ANDROID_SIGNING_KEY_PASSWORD`: senha da chave.
 
-Não compartilhe a chave nem as senhas e não as adicione ao Git. A perda da chave impede que o Android aceite atualizações assinadas com uma nova chave. O APK atualmente instalado como debug usa outra assinatura; para instalar a primeira release, será necessário desinstalá-lo uma vez, o que apaga os dados locais. Releases futuras manterão a assinatura e poderão atualizar a instalação normalmente. O job de publicação usa `GITHUB_TOKEN` com permissão `contents: write`; se uma política da organização bloquear essa permissão, habilite escrita de workflows nas configurações do repositório.
+Não compartilhe a chave nem as senhas e não as adicione ao Git. A perda da chave impede que o Android aceite atualizações assinadas com uma nova chave. Instalações de depuração existentes usam outra assinatura; para instalar a primeira release sobre uma delas, será necessário desinstalá-la uma vez, o que apaga os dados locais. Releases futuras manterão a assinatura e poderão atualizar a instalação normalmente. O job de publicação usa `GITHUB_TOKEN` com permissão `contents: write`; se uma política da organização bloquear essa permissão, habilite escrita de workflows nas configurações do repositório.
 
-## Instalar no Samsung Galaxy A34
+## Instalar em um dispositivo Android
 
 Se `adb install -r` retornar `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, o APK já instalado foi assinado com outra chave. Anote as coordenadas selecionadas e as preferências do app, remova a instalação antiga uma vez com `adb uninstall dev.local.mockgps` e instale o APK novamente. Essa remoção apaga os dados locais do app. Builds posteriores reutilizam a chave no volume `gradle-cache` e podem atualizar a instalação normalmente.
 
-1. Ative as Opções do desenvolvedor em **Configurações → Sobre o telefone → Informações do software** e toque sete vezes em **Número da versão**. Confirme o bloqueio do aparelho quando solicitado.
-2. Em **Opções do desenvolvedor**, ative **Depuração USB** e conecte o telefone ao computador. Autorize a chave RSA na tela do aparelho.
+1. Ative as Opções do desenvolvedor nas configurações do dispositivo. O caminho e o nome do item **Número da versão** variam conforme o fabricante e a versão do Android; normalmente é necessário tocar nele sete vezes. Confirme o bloqueio do aparelho quando solicitado.
+2. Em **Opções do desenvolvedor**, ative **Depuração USB** e conecte o dispositivo ao computador. Autorize a chave RSA na tela do aparelho.
 3. Construa o APK e instale usando o `adb` do host:
 
    ```sh
@@ -75,7 +75,7 @@ Se `adb install -r` retornar `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, o APK já ins
 
    Ou use diretamente `adb install -r app/build/outputs/apk/debug/app-debug.apk`. O ADB permanece no host; não é necessário encaminhar USB ao Docker.
 4. Abra **Mock GPS**, conceda a permissão de localização e notificações quando solicitadas e habilite a localização do aparelho.
-5. Em **Opções do desenvolvedor → Selecionar app de local fictício**, escolha **Mock GPS**. Os nomes dos menus podem variar um pouco conforme a versão do One UI.
+5. Em **Opções do desenvolvedor → Selecionar app de local fictício**, escolha **Mock GPS**. O caminho e os nomes dos menus podem variar conforme o fabricante e a versão do Android.
 6. Informe coordenadas ou toque no mapa e pressione **Aplicar**. Para encerrar, pressione **Parar** no app ou na notificação persistente.
 
 O aplicativo não precisa de root. O Android mantém a simulação marcada como localização fictícia; o app não tenta esconder nem alterar esse sinal.
@@ -96,4 +96,4 @@ O app usa Views XML e separa a tela (`MainActivity`), integração com `Location
 
 Testes unitários cobrem os limites de entrada, NaN/infinito, variação desativada, limites de distância, movimento determinístico, polos e a troca da linha internacional de data. Os fluxos de permissão, serviço, notificação e provedor de teste ainda exigem validação manual em um Android físico.
 
-Siga o [roteiro de testes no aparelho](docs/device-test-checklist.md) para verificar esses fluxos no Galaxy A34 e registrar resultados sem confundir instruções com testes já executados.
+Siga o [roteiro de testes em um dispositivo Android](docs/device-test-checklist.md) para verificar esses fluxos e registrar resultados sem confundir instruções com testes já executados.
