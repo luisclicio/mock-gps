@@ -4,7 +4,7 @@
 
 Aplicativo Android nativo para testes locais de localização simulada. Permite informar latitude/longitude, escolher um ponto no mapa, ativar variações suaves de até 5 metros e manter atualizações por um serviço em primeiro plano.
 
-O projeto usa Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36 e MapLibre Native Android 11.8.0. O Docker fornece JDK e Android SDK; no computador host são necessários Docker Compose e, somente para instalar no aparelho, Android Platform Tools (`adb`).
+O projeto usa Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36 e MapLibre Native Android 11.8.0. O Docker fornece JDK e Android SDK; no computador host são necessários Docker Compose e, somente para instalar no aparelho, Android Platform Tools (`adb`). O app usa inglês por padrão e muda para português quando o idioma do dispositivo está configurado como português.
 
 ## Construir e testar
 

@@ -4,7 +4,7 @@
 
 A native Android app for testing mock locations. Enter coordinates manually, choose a point on the map, enable smooth variations of up to 5 meters, and keep location updates running with a foreground service.
 
-The project uses Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36, and MapLibre Native Android 11.8.0. Docker provides the JDK and Android SDK. The host needs Docker Compose and, only to install the app on a device, Android Platform Tools (`adb`). The app interface is in Brazilian Portuguese.
+The project uses Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36, and MapLibre Native Android 11.8.0. Docker provides the JDK and Android SDK. The host needs Docker Compose and, only to install the app on a device, Android Platform Tools (`adb`). The app uses English by default and switches to Portuguese when the device language is Portuguese.
 
 ## Build and test
 

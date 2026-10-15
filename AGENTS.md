@@ -458,11 +458,11 @@ Handle at least:
 
 Never silently swallow an error that prevents simulation from functioning.
 
-Provide understandable error messages in Brazilian Portuguese.
+Provide understandable error messages in English and Brazilian Portuguese, using the language selected from the device locale.
 
 ## 14. User Experience
 
-All visible application text must be in Brazilian Portuguese.
+All visible application text must be available in English and Brazilian Portuguese. Use English by default and Portuguese when the device language is Portuguese.
 
 Keep the interface clean and minimal.
 
