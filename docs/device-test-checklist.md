@@ -1,26 +1,28 @@
-# Roteiro de teste em um dispositivo Android
+# Android Device Test Checklist
 
-Use um aparelho de teste com **Mock GPS** instalado e localização ativada. A API do Android mantém essas posições marcadas como fictícias. Não deixe a simulação ativa após os testes.
+[English](device-test-checklist.md) | [Português (Brasil)](device-test-checklist.pt-BR.md)
 
-## Preparação
+Use a test device with **Mock GPS** installed and device location enabled. Android marks these positions as mock locations. Stop the simulation after testing.
 
-- [ ] Instale o APK seguindo o [README](../README.md#instalar-em-um-dispositivo-android).
-- [ ] Conceda as permissões apresentadas pelo app.
-- [ ] Selecione **Mock GPS** em **Opções do desenvolvedor → Selecionar app de local fictício**.
-- [ ] Abra um app de teste que mostre a posição recebida e permita atualizar a leitura.
+## Preparation
 
-## Fluxos
+- [ ] Install the APK using the [README instructions](../README.md#install-on-an-android-device).
+- [ ] Grant the permissions requested by the app.
+- [ ] Select **Mock GPS** in **Developer options → Select mock location app**.
+- [ ] Open a test app that displays the received position and lets you refresh it.
 
-- [ ] **Autorização ausente:** desmarque temporariamente Mock GPS nas Opções do desenvolvedor, volte ao app e toque em **Aplicar**. O app deve mostrar **Permissão necessária** e oferecer a abertura das Opções do desenvolvedor. Selecione Mock GPS novamente antes de continuar.
-- [ ] **Validação e mapa:** informe `0,0001` e `-0,0001`; confirme que a vírgula é aceita. Toque em outro ponto no mapa e confira se os campos e o marcador mudam juntos. Tente latitude `91` e confirme a mensagem de intervalo.
-- [ ] **Iniciar e atualizar:** aplique `0.0001`, `-0.0001`; confirme o estado **Ativo**, a notificação persistente e a posição no app de teste. Altere as coordenadas enquanto ativo e aplique novamente; confirme que a nova posição aparece sem encerrar o serviço.
-- [ ] **Variação:** desligue **Pequenas variações de coordenadas**, aplique e confira que o ponto publicado é o centro selecionado. Ligue a opção, aplique e observe atualizações suaves dentro do limite de 5 m, sem afastamento contínuo do centro.
-- [ ] **Tela bloqueada:** com a simulação ativa, bloqueie a tela por pelo menos um minuto. Desbloqueie e confirme que o serviço e a notificação continuam ativos e que o app de teste ainda recebe atualizações.
-- [ ] **Parada pela notificação:** use **Parar** na notificação. Ela deve desaparecer, o app deve mostrar **Inativo** e o app de teste deve deixar de receber as posições simuladas.
-- [ ] **Parada pelo app e repetição:** inicie e pare pelo app pelo menos cinco vezes. Confirme que cada início funciona e que a notificação some após cada parada.
-- [ ] **Falha e recuperação:** enquanto ativo, desmarque Mock GPS nas Opções do desenvolvedor. O app deve encerrar a simulação e mostrar erro se o Android revogar o provedor. Selecione Mock GPS novamente, toque em **Aplicar** e confirme que um novo ciclo funciona.
-- [ ] **Sem rede:** ative o modo avião, informe as coordenadas manualmente e confirme que os controles permanecem utilizáveis mesmo sem carregar o mapa. Encerre o teste e restaure a conectividade.
+## Test flows
 
-## Resultado
+- [ ] **Authorization missing:** Temporarily deselect Mock GPS in Developer options, return to the app, and tap **Aplicar** (Apply). The app should show **Permissão necessária** (Permission required) and offer to open Developer options. Select Mock GPS again before continuing.
+- [ ] **Validation and map:** Enter `0,0001` and `-0,0001`; confirm that the decimal comma is accepted. Tap another point on the map and check that the fields and marker move together. Try latitude `91` and confirm that the range error appears.
+- [ ] **Start and update:** Apply `0.0001`, `-0.0001`; confirm the **Ativo** (Active) status, persistent notification, and position in the test app. Change the coordinates while active and apply again; confirm that the new position appears without stopping the service.
+- [ ] **Variation:** Turn **Pequenas variações de coordenadas** (Small coordinate variations) off, apply, and check that the published point is the selected center. Turn it on, apply, and observe smooth updates within 5 m without continuous drift away from the center.
+- [ ] **Screen locked:** With simulation active, lock the screen for at least one minute. Unlock it and confirm that the service and notification remain active and the test app still receives updates.
+- [ ] **Stop from notification:** Tap **Parar** (Stop) in the notification. It should disappear, the app should show **Inativo** (Inactive), and the test app should stop receiving simulated positions.
+- [ ] **Stop from app and repeat:** Start and stop from the app at least five times. Confirm each start works and the notification disappears after every stop.
+- [ ] **Failure and recovery:** While active, deselect Mock GPS in Developer options. The app should stop the simulation and show an error if Android revokes the provider. Select Mock GPS again, tap **Aplicar**, and confirm that a new cycle works.
+- [ ] **Offline use:** Turn on airplane mode, enter coordinates manually, and confirm that the controls remain usable even if the map does not load. Finish the test and restore connectivity.
 
-Registre o fabricante e o modelo do dispositivo, a versão do Android e o resultado de cada item. Este roteiro ainda não foi executado em um aparelho físico; não marque itens como aprovados sem verificá-los no dispositivo.
+## Results
+
+Record the device manufacturer and model, Android version, and result for each item. This checklist has not yet been run on a physical device; do not mark items as passed without verifying them on the device.

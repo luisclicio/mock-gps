@@ -1,25 +1,27 @@
 # Mock GPS
 
-Aplicativo Android nativo para testes locais de localização simulada. Permite informar latitude/longitude, escolher um ponto no mapa, ativar variações suaves de até 5 metros e manter atualizações por um serviço em primeiro plano.
+[English](README.md) | [Português (Brasil)](README.pt-BR.md)
 
-O projeto usa Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36 e MapLibre Native Android 11.8.0. O Docker fornece JDK e Android SDK; no computador host são necessários Docker Compose e, somente para instalar no aparelho, Android Platform Tools (`adb`).
+A native Android app for testing mock locations. Enter coordinates manually, choose a point on the map, enable smooth variations of up to 5 meters, and keep location updates running with a foreground service.
 
-## Construir e testar
+The project uses Kotlin, Android Gradle Plugin 8.11.1, Gradle 8.13, Kotlin 2.2.21, Android SDK 36, and MapLibre Native Android 11.8.0. Docker provides the JDK and Android SDK. The host needs Docker Compose and, only to install the app on a device, Android Platform Tools (`adb`). The app interface is in Brazilian Portuguese.
 
-Na raiz do repositório, construa a imagem uma vez:
+## Build and test
+
+From the repository root, build the Docker image once:
 
 ```sh
 docker compose build
 ```
 
-Depois, construa o APK e execute os testes unitários e o lint:
+Then build the APK and run unit tests and lint:
 
 ```sh
 ./scripts/build.sh
 ./scripts/test.sh
 ```
 
-Os comandos equivalentes são:
+Equivalent Gradle commands are:
 
 ```sh
 docker compose run --rm android ./gradlew assembleDebug
@@ -27,19 +29,19 @@ docker compose run --rm android ./gradlew testDebugUnitTest
 docker compose run --rm android ./gradlew lintDebug
 ```
 
-O APK de depuração fica em `app/build/outputs/apk/debug/app-debug.apk`. O volume Docker `gradle-cache` mantém o cache de dependências e a chave de assinatura de debug entre execuções. Preserve esse volume para que novas versões do APK possam atualizar a instalação existente. Se ele for removido, o Gradle cria outra chave e o Android exige desinstalar a versão anterior antes de instalar a nova. O código-fonte é montado no container a partir da raiz do repositório e fica disponível durante o build. Na primeira execução, o script baixa o Gradle Wrapper do repositório oficial do projeto e verifica o SHA-256 fixado no repositório; o Gradle também verifica o checksum da distribuição. O build da imagem baixa as ferramentas Android fixadas no `Dockerfile`.
+The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. The Docker volume `gradle-cache` preserves dependency caches and the debug signing key between runs. Keep this volume if you want later debug APKs to update an existing debug installation. If the volume is removed, Gradle creates a new key and Android requires the previous installation to be uninstalled before installing the new APK. The repository source is mounted into the container for builds. On the first run, the script downloads the Gradle Wrapper from the project's official repository and verifies its pinned SHA-256; Gradle also verifies the distribution checksum. The image build downloads the Android tools pinned in the `Dockerfile`.
 
-Para trocar o estilo do mapa, defina `mapStyleUrl` na linha de comando do Gradle, por exemplo:
+To change the map style, set `mapStyleUrl` in the Gradle command, for example:
 
 ```sh
 docker compose run --rm android ./gradlew assembleDebug -PmapStyleUrl=https://tiles.openfreemap.org/styles/liberty
 ```
 
-## GitHub Actions e releases
+## GitHub Actions and releases
 
-Pull requests para `main` e pushes para `main` executam os testes unitários, o lint e o build de depuração em Docker. Depois de um push bem-sucedido para `main`, a pipeline também gera um APK de release assinado e publica uma GitHub Release chamada `v1.0.<número-da-execução>`, com o APK anexado. O `versionCode` usa o número da execução para que cada release possa atualizar a anterior.
+Pull requests to `main` and pushes to `main` run unit tests, lint, and a debug build in Docker. After a successful push to `main`, the workflow also builds a signed release APK and publishes a GitHub Release named `v1.0.<run-number>` with the APK attached. The `versionCode` uses the workflow run number so each release can update the previous one.
 
-Para manter a mesma assinatura em todas as versões, crie uma chave de release e guarde uma cópia segura fora do repositório. O diretório `.secrets/` já é ignorado pelo Git. Na raiz do projeto, gere uma chave uma única vez:
+To keep the same signature across releases, create one release key and keep a secure backup outside the repository. The `.secrets/` directory is ignored by Git. From the repository root, generate the key once:
 
 ```sh
 docker compose build android
@@ -51,49 +53,49 @@ docker compose run --rm --user "$(id -u):$(id -g)" \
     -alias mockgps -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-No repositório GitHub, abra **Settings → Secrets and variables → Actions** e cadastre estes repository secrets:
+In the GitHub repository, open **Settings → Secrets and variables → Actions** and add these repository secrets:
 
-- `ANDROID_SIGNING_KEYSTORE_BASE64`: conteúdo de `.secrets/mock-gps-release.jks` codificado em uma linha com `base64 .secrets/mock-gps-release.jks | tr -d '\n'`.
-- `ANDROID_SIGNING_STORE_PASSWORD`: senha do keystore.
+- `ANDROID_SIGNING_KEYSTORE_BASE64`: the keystore file `.secrets/mock-gps-release.jks` encoded as a single line with `base64 .secrets/mock-gps-release.jks | tr -d '\n'`.
+- `ANDROID_SIGNING_STORE_PASSWORD`: the keystore password.
 - `ANDROID_SIGNING_KEY_ALIAS`: `mockgps`.
-- `ANDROID_SIGNING_KEY_PASSWORD`: senha da chave.
+- `ANDROID_SIGNING_KEY_PASSWORD`: the key password.
 
-Não compartilhe a chave nem as senhas e não as adicione ao Git. A perda da chave impede que o Android aceite atualizações assinadas com uma nova chave. Instalações de depuração existentes usam outra assinatura; para instalar a primeira release sobre uma delas, será necessário desinstalá-la uma vez, o que apaga os dados locais. Releases futuras manterão a assinatura e poderão atualizar a instalação normalmente. O job de publicação usa `GITHUB_TOKEN` com permissão `contents: write`; se uma política da organização bloquear essa permissão, habilite escrita de workflows nas configurações do repositório.
+Do not share the key or passwords or add them to Git. Losing the key prevents Android from accepting updates signed with a replacement key. Existing debug installations use a different signature; installing the first release over one requires uninstalling it once, which deletes its local data. Later releases use the same signature and can update the installation normally. The publishing job uses `GITHUB_TOKEN` with `contents: write`; if an organization policy blocks this permission, enable workflow write permissions in the repository settings.
 
-## Instalar em um dispositivo Android
+## Install on an Android device
 
-Se `adb install -r` retornar `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, o APK já instalado foi assinado com outra chave. Anote as coordenadas selecionadas e as preferências do app, remova a instalação antiga uma vez com `adb uninstall dev.local.mockgps` e instale o APK novamente. Essa remoção apaga os dados locais do app. Builds posteriores reutilizam a chave no volume `gradle-cache` e podem atualizar a instalação normalmente.
+If `adb install -r` returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, the installed APK was signed with a different key. Note your selected coordinates and app preferences, uninstall the old app once with `adb uninstall dev.local.mockgps`, then install the new APK. Uninstalling deletes the app's local data. Later debug builds reuse the key in the `gradle-cache` volume and can update the installation normally.
 
-1. Ative as Opções do desenvolvedor nas configurações do dispositivo. O caminho e o nome do item **Número da versão** variam conforme o fabricante e a versão do Android; normalmente é necessário tocar nele sete vezes. Confirme o bloqueio do aparelho quando solicitado.
-2. Em **Opções do desenvolvedor**, ative **Depuração USB** e conecte o dispositivo ao computador. Autorize a chave RSA na tela do aparelho.
-3. Construa o APK e instale usando o `adb` do host:
+1. Enable Developer options in the device settings. The path and the name of **Build number** vary by manufacturer and Android version; it usually needs to be tapped seven times. Confirm the device lock when prompted.
+2. In **Developer options**, enable **USB debugging** and connect the device to the computer. Approve the RSA key on the device.
+3. Build and install the APK with host `adb`:
 
    ```sh
    ./scripts/build.sh
    ./scripts/install.sh
    ```
 
-   Ou use diretamente `adb install -r app/build/outputs/apk/debug/app-debug.apk`. O ADB permanece no host; não é necessário encaminhar USB ao Docker.
-4. Abra **Mock GPS**, conceda a permissão de localização e notificações quando solicitadas e habilite a localização do aparelho.
-5. Em **Opções do desenvolvedor → Selecionar app de local fictício**, escolha **Mock GPS**. O caminho e os nomes dos menus podem variar conforme o fabricante e a versão do Android.
-6. Informe coordenadas ou toque no mapa e pressione **Aplicar**. Para encerrar, pressione **Parar** no app ou na notificação persistente.
+   Or run `adb install -r app/build/outputs/apk/debug/app-debug.apk` directly. ADB runs on the host; USB passthrough to Docker is not needed.
+4. Open **Mock GPS**, grant the requested location and notification permissions, and enable device location.
+5. In **Developer options → Select mock location app**, choose **Mock GPS**. Menu paths and names vary by manufacturer and Android version.
+6. Enter coordinates or tap the map, then press **Aplicar** (Apply). To stop, press **Parar** (Stop) in the app or in the persistent notification.
 
-O aplicativo não precisa de root. O Android mantém a simulação marcada como localização fictícia; o app não tenta esconder nem alterar esse sinal.
+The app does not require root. Android continues to mark these positions as mock locations; the app does not try to hide or change that status.
 
-## Privacidade e limitações
+## Privacy and limitations
 
-- As coordenadas selecionadas e preferências ficam em `SharedPreferences` local. O app não tem conta, analytics, anúncios, backend ou banco remoto e não lê a localização real do aparelho.
-- A permissão de localização é solicitada porque o Android a exige para este serviço em primeiro plano. Em Android 8–11 também é necessária a permissão precisa para registrar o provedor de teste; o manifesto limita essa permissão a essas versões. Ela não é usada para obter a localização do usuário.
-- A permissão de internet serve para carregar estilo, fontes e tiles do mapa. O provedor padrão é o [OpenFreeMap](https://openfreemap.org/quick_start/), que não exige chave. Ao mostrar uma região, as requisições de tiles revelam ao provedor a área do mapa consultada; por isso, não use o mapa se não quiser fazer essas requisições. A entrada manual continua disponível offline.
-- O provedor público de mapa é oferecido “como está”; [termos do OpenFreeMap](https://openfreemap.org/tos/) e disponibilidade podem mudar. Atribuição do mapa permanece visível. Para produção ou tráfego elevado, configure um provedor apropriado respeitando seus termos e limites.
-- A API oficial de provedores de teste é usada. Apps podem detectar a simulação por `Location.isMock()`, e alguns apps usam provedores de localização fundida ou políticas próprias, portanto o resultado pode variar por aparelho e aplicativo.
-- As variações são um passeio aleatório suave limitado a 5 m, atualizado a cada segundo. Para cumprir esse intervalo com a tela bloqueada, o serviço mantém um bloqueio parcial de CPU enquanto estiver ativo, o que consome bateria. Ele libera o bloqueio ao parar e não reinicia a simulação após reinicialização do aparelho.
-- A seleção inicial do mock provider, o serviço em primeiro plano, a notificação e a integração com provedores de cada fabricante precisam ser conferidos no aparelho. Não há resultado de teste físico documentado como aprovado neste repositório.
+- Selected coordinates and preferences are stored locally in `SharedPreferences`. The app has no account, analytics, ads, backend, or remote database, and it does not read the device's real location.
+- Location permission is requested because Android requires it for this foreground service. Android 8–11 also requires precise location permission to register a test provider; the manifest limits that permission to those versions. The app does not use it to obtain the user's location.
+- Internet access is used to load the map style, fonts, and tiles. The default provider, [OpenFreeMap](https://openfreemap.org/quick_start/), does not require an API key. Map tile requests reveal the displayed area to the provider, so do not use the map if you do not want to make those requests. Manual coordinate entry works offline.
+- The public map provider is offered “as is”; [OpenFreeMap's terms](https://openfreemap.org/tos/) and availability may change. Map attribution remains visible. For production or high traffic, configure an appropriate provider and follow its terms and limits.
+- The app uses Android's official test provider API. Apps can detect mock locations with `Location.isMock()`, and some apps use fused location providers or their own policies, so behavior varies by app and device.
+- Coordinate variations use a smooth random walk limited to 5 m and update every second. To maintain this interval while the screen is locked, the service holds a partial CPU wake lock while active, which uses battery. It releases the lock when stopped and does not resume the simulation after a reboot.
+- Mock provider selection, the foreground service, notifications, and provider integration must be checked on a physical device. This repository does not claim that physical-device tests have passed.
 
-## Desenvolvimento
+## Development
 
-O app usa Views XML e separa a tela (`MainActivity`), integração com `LocationManager` (`MockLocationController`), execução em segundo plano (`MockLocationService`), validação e variação de coordenadas e interação do mapa. O mapa é implementado com MapLibre Native Android e estilo OpenFreeMap Liberty. Os valores de latitude/longitude aceitam ponto ou vírgula decimal.
+The app uses XML Views and separates the screen (`MainActivity`), `LocationManager` integration (`MockLocationController`), background execution (`MockLocationService`), coordinate validation and variation, and map interaction. The map uses MapLibre Native Android with the OpenFreeMap Liberty style. Latitude and longitude inputs accept either a dot or comma as the decimal separator.
 
-Testes unitários cobrem os limites de entrada, NaN/infinito, variação desativada, limites de distância, movimento determinístico, polos e a troca da linha internacional de data. Os fluxos de permissão, serviço, notificação e provedor de teste ainda exigem validação manual em um Android físico.
+Unit tests cover input boundaries, NaN/infinity, disabled variations, distance limits, deterministic movement, poles, and the international date line. Permission, service, notification, and test-provider flows still require manual verification on a physical Android device.
 
-Siga o [roteiro de testes em um dispositivo Android](docs/device-test-checklist.md) para verificar esses fluxos e registrar resultados sem confundir instruções com testes já executados.
+See the [Android device test checklist](docs/device-test-checklist.md). For the Portuguese version, see the [roteiro de testes em português](docs/device-test-checklist.pt-BR.md).

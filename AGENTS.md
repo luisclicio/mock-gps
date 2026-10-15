@@ -591,5 +591,6 @@ When working on this repository:
 13. Document incomplete features and known limitations.
 14. Do not change project scope without explicit approval.
 15. Prioritize a working APK over architectural sophistication.
+16. Maintain user-facing documentation in English and Brazilian Portuguese. Keep `README.md` and `docs/device-test-checklist.md` in English, with matching `README.pt-BR.md` and `docs/device-test-checklist.pt-BR.md` translations. Keep their language links and instructions aligned. Keep this agent guidance file in English.
 
 **Primary objective:** deliver a small, maintainable, Docker-built Android mock GPS application that is easy for a beginner to understand, modify, compile, and install.
