@@ -2,6 +2,7 @@
 local.properties
 .idea/
 *.iml
+.secrets/
 build/
 app/build/
 .externalNativeBuild/

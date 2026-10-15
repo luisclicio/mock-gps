@@ -35,6 +35,31 @@ Para trocar o estilo do mapa, defina `mapStyleUrl` na linha de comando do Gradle
 docker compose run --rm android ./gradlew assembleDebug -PmapStyleUrl=https://tiles.openfreemap.org/styles/liberty
 ```
 
+## GitHub Actions e releases
+
+Pull requests para `main` e pushes para `main` executam os testes unitários, o lint e o build de depuração em Docker. Depois de um push bem-sucedido para `main`, a pipeline também gera um APK de release assinado e publica uma GitHub Release chamada `v1.0.<número-da-execução>`, com o APK anexado. O `versionCode` usa o número da execução para que cada release possa atualizar a anterior.
+
+Para manter a mesma assinatura em todas as versões, crie uma chave de release e guarde uma cópia segura fora do repositório. O diretório `.secrets/` já é ignorado pelo Git. Na raiz do projeto, gere uma chave uma única vez:
+
+```sh
+docker compose build android
+mkdir -p .secrets
+docker compose run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/.secrets:/secrets" android \
+  keytool -genkeypair -v -storetype JKS \
+    -keystore /secrets/mock-gps-release.jks \
+    -alias mockgps -keyalg RSA -keysize 2048 -validity 10000
+```
+
+No repositório GitHub, abra **Settings → Secrets and variables → Actions** e cadastre estes repository secrets:
+
+- `ANDROID_SIGNING_KEYSTORE_BASE64`: conteúdo de `.secrets/mock-gps-release.jks` codificado em uma linha com `base64 -w 0 .secrets/mock-gps-release.jks`.
+- `ANDROID_SIGNING_STORE_PASSWORD`: senha do keystore.
+- `ANDROID_SIGNING_KEY_ALIAS`: `mockgps`.
+- `ANDROID_SIGNING_KEY_PASSWORD`: senha da chave.
+
+Não compartilhe a chave nem as senhas e não as adicione ao Git. A perda da chave impede que o Android aceite atualizações assinadas com uma nova chave. O APK atualmente instalado como debug usa outra assinatura; para instalar a primeira release, será necessário desinstalá-lo uma vez, o que apaga os dados locais. Releases futuras manterão a assinatura e poderão atualizar a instalação normalmente. O job de publicação usa `GITHUB_TOKEN` com permissão `contents: write`; se uma política da organização bloquear essa permissão, habilite escrita de workflows nas configurações do repositório.
+
 ## Instalar no Samsung Galaxy A34
 
 Se `adb install -r` retornar `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, o APK já instalado foi assinado com outra chave. Anote as coordenadas selecionadas e as preferências do app, remova a instalação antiga uma vez com `adb uninstall dev.local.mockgps` e instale o APK novamente. Essa remoção apaga os dados locais do app. Builds posteriores reutilizam a chave no volume `gradle-cache` e podem atualizar a instalação normalmente.

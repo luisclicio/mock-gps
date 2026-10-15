@@ -1,0 +1,110 @@
+name: Android CI and Release
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Test and build Android app
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RELEASE_VERSION_CODE: ${{ github.run_number }}
+      RELEASE_VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build Android Docker image
+        run: docker compose build android
+
+      - name: Run unit tests, lint, and debug build
+        run: |
+          docker compose run --rm --user "$(id -u):$(id -g)" android \
+            ./gradlew testDebugUnitTest lintDebug assembleDebug \
+              -PreleaseVersionCode="$RELEASE_VERSION_CODE" \
+              -PreleaseVersionName="$RELEASE_VERSION_NAME"
+
+      - name: Build signed release APK
+        if: github.event_name == 'push'
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ANDROID_SIGNING_KEYSTORE_BASE64:?Configure the Android signing secrets in GitHub repository settings}"
+          : "${ANDROID_SIGNING_STORE_PASSWORD:?Configure the Android signing secrets in GitHub repository settings}"
+          : "${ANDROID_SIGNING_KEY_ALIAS:?Configure the Android signing secrets in GitHub repository settings}"
+          : "${ANDROID_SIGNING_KEY_PASSWORD:?Configure the Android signing secrets in GitHub repository settings}"
+
+          keystore_file="$RUNNER_TEMP/mock-gps-release.jks"
+          trap 'rm -f "$keystore_file"' EXIT
+          umask 077
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$keystore_file"
+          test -s "$keystore_file"
+
+          export RELEASE_STORE_FILE=/tmp/mock-gps-release.jks
+          export RELEASE_STORE_PASSWORD="$ANDROID_SIGNING_STORE_PASSWORD"
+          export RELEASE_KEY_ALIAS="$ANDROID_SIGNING_KEY_ALIAS"
+          export RELEASE_KEY_PASSWORD="$ANDROID_SIGNING_KEY_PASSWORD"
+
+          docker compose run --rm --user "$(id -u):$(id -g)" \
+            --volume "$keystore_file:/tmp/mock-gps-release.jks:ro" \
+            --env RELEASE_STORE_FILE \
+            --env RELEASE_STORE_PASSWORD \
+            --env RELEASE_KEY_ALIAS \
+            --env RELEASE_KEY_PASSWORD \
+            android ./gradlew assembleRelease \
+              -PreleaseVersionCode="$RELEASE_VERSION_CODE" \
+              -PreleaseVersionName="$RELEASE_VERSION_NAME"
+
+          mv app/build/outputs/apk/release/app-release.apk \
+            "app/build/outputs/apk/release/mock-gps-v${RELEASE_VERSION_NAME}.apk"
+
+      - name: Upload signed release APK
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/mock-gps-v1.0.${{ github.run_number }}.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish GitHub Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed release APK
+        uses: actions/download-artifact@v8
+        with:
+          name: release-apk
+          path: release-assets
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          tag="v${RELEASE_VERSION_NAME}"
+          gh release create "$tag" "release-assets/mock-gps-${tag}.apk" \
+            --repo "$GH_REPO" \
+            --title "Mock GPS ${tag}" \
+            --generate-notes \
+            --target "$GITHUB_SHA"
